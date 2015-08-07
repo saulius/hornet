@@ -1,0 +1,21 @@
+language: clojure
+lein: lein2
+script: lein2 test
+jdk:
+  - oraclejdk7
+  - oraclejdk8
+env:
+  - HBASE_VERSION=1.0.0
+branches:
+  only:
+    - master
+before_script:
+  - 'export HBASE_DIR=hbase-$HBASE_VERSION'
+  - 'export HBASE_FILE=$HBASE_DIR-bin.tar.gz'
+  - "wget http://archive.apache.org/dist/hbase/hbase-$HBASE_VERSION/$HBASE_FILE"
+  - "tar -xzf $HBASE_FILE"
+  - "$HBASE_DIR/bin/start-hbase.sh"
+  - "sleep 5" # give some time for HBase to start
+after_script:
+  - "$HBASE_DIR/bin/stop-hbase.sh"
+    
