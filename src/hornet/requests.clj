@@ -69,7 +69,7 @@
      (.has this (to-bytes family) (to-bytes qualifier) ts (to-bytes value))))
 
   IIdentifiableRequest
-  (set-id [this] (.setId this))
+  (set-id [^Put this id] (.setId this id))
   (id [this] (.getId this))
 
   IMutationRequest
@@ -78,7 +78,7 @@
 
 (extend-type Delete
   IIdentifiableRequest
-  (set-id [this] (.setId this))
+  (set-id [^Delete this id] (.setId this id))
   (id [this] (.getId this))
 
   IMutationRequest

@@ -1,4 +1,5 @@
 (ns hornet.client-test
+  (:refer-clojure :rename {get map-get})
   (:require [clojure.test :refer :all]
             [hornet.test-helpers :as th]
             [hornet.conversions :refer [to-clojure]]
@@ -7,39 +8,40 @@
 
 (use-fixtures :once
   (fn [all-tests]
-    (th/create-test-table :_hornet-table {:hornet-family {:max-versions 3}})
-    (th/create-test-table :multi-family-table [:f1 :f2 :f3])
+    (th/create-test-table :_hornet-table {:hf {:max-versions 3}})
+    (th/create-test-table :_hornet-multi-family-table [:f1 :f2 :f3])
     (all-tests)))
 
 (use-fixtures :each
   (fn [test]
-    (th/truncate-tables [:_hornet-table :multi-family-table])
+    (th/truncate-tables [:_hornet-table :_hornet-multi-family-table])
     (test)))
 
 (let [connection (th/make-test-connection)
-      multi-family-table-name :multi-family-table]
+      table-name :_hornet-table
+      multi-family-table-name :_hornet-multi-family-table]
   (deftest put-test-args-as-keywords
     (testing "simple put with family and column as keywords"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b "b"}})
-      (is (not-empty (get connection :_hornet-table "rowkey")))))
+      (put connection table-name "rowkey" {:hf {:b "b"}})
+      (is (not-empty (get connection table-name "rowkey")))))
 
   (deftest put-test-args-as-strings
     (testing "simple put with family and column as strings"
-      (put connection :_hornet-table "rowkey" {"hornet-family" {"b" "b"}})
-      (is (not-empty (get connection :_hornet-table "rowkey")))))
+      (put connection table-name "rowkey" {"hf" {"b" "b"}})
+      (is (not-empty (get connection table-name "rowkey")))))
 
   (deftest put-test-custom-timestamp
     (testing "put with custom timestamp"
       (let [timestamp 1437928014]
-        (put connection :_hornet-table "rowkey" {:hornet-family {:b {timestamp "b"}}})
-        (is (not-empty (get connection :_hornet-table "rowkey" {:timestamp timestamp})))
-        (is (empty (get connection :_hornet-table "rowkey" {:timestamp (inc timestamp)}))))))
+        (put connection table-name "rowkey" {:hf {:b {timestamp "b"}}})
+        (is (not-empty (get connection table-name "rowkey" {:timestamp timestamp})))
+        (is (empty (get connection table-name "rowkey" {:timestamp (inc timestamp)}))))))
 
   (deftest put-test-multiple-columns
     (testing "put with multiple columns"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b "b"
-                                                              :c "d"}})
-      (let [result (get connection :_hornet-table "rowkey")]
+      (put connection table-name "rowkey" {:hf {:b "b"
+                                                :c "d"}})
+      (let [result (get connection table-name "rowkey")]
         (is (not-empty result))
         (is (= 2 (count result)))
         (is (= #{"b" "c"} (set (map #(-> % :qualifier to-clojure) result)))))))
@@ -57,14 +59,14 @@
 
   (deftest get-test-by-rowkey
     (testing "get by rowkey"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b "b"}})
-      (is (not-empty (get connection :_hornet-table "rowkey")))))
+      (put connection table-name "rowkey" {:hf {:b "b"}})
+      (is (not-empty (get connection table-name "rowkey")))))
 
   (deftest get-test-by-rowkey-multiple-versions
     (testing "get by rowkey with several versions returns all versions"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:f {123 "b"
-                                                                  999 "c"}}})
-      (let [result (get connection :_hornet-table "rowkey")
+      (put connection table-name "rowkey" {:hf {:f {123 "b"
+                                                    999 "c"}}})
+      (let [result (get connection table-name "rowkey")
             res (first result)]
         (is (= 1 (count result)))
         (is (= "c" (to-clojure (:value res))))
@@ -72,9 +74,9 @@
 
   (deftest get-test-with-timestamp
     (testing "get with timestamp"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b {123 "b"
-                                                                  435 "c"}}})
-      (let [result (get connection :_hornet-table "rowkey" {:timestamp 435})
+      (put connection table-name "rowkey" {:hf {:b {123 "b"
+                                                    435 "c"}}})
+      (let [result (get connection table-name "rowkey" {:timestamp 435})
             res (first result)]
         (is (not-empty result))
         (is (= 1 (count result)))
@@ -83,10 +85,10 @@
 
   (deftest get-test-with-timestamp-range
     (testing "get with timestamp range"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b {222 "b"
-                                                                  444 "c"}}})
-      (let [result (get connection :_hornet-table "rowkey" {:min-timestamp 111
-                                                           :max-timestamp 333})
+      (put connection table-name "rowkey" {:hf {:b {222 "b"
+                                                    444 "c"}}})
+      (let [result (get connection table-name "rowkey" {:min-timestamp 111
+                                                        :max-timestamp 333})
             res (first result)]
         (is (not-empty result))
         (is (= 1 (count result)))
@@ -95,9 +97,9 @@
 
   (deftest get-test-with-max-versions-to-fetch
     (testing "get max versions"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {123 "v1"}}})
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {456 "v2"}}})
-      (let [result (get connection :_hornet-table "rowkey" {:max-versions 2})
+      (put connection table-name "rowkey" {:hf {:a {123 "v1"}}})
+      (put connection table-name "rowkey" {:hf {:a {456 "v2"}}})
+      (let [result (get connection table-name "rowkey" {:max-versions 2})
             res (first result)]
         (is (not-empty result))
         (is (= 2 (count result)))
@@ -106,10 +108,10 @@
 
   (deftest get-test-with-all-versions-to-fetch
     (testing "get all versions"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {123 "v1"}}})
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {456 "v2"}}})
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {888 "v3"}}})
-      (let [result (get connection :_hornet-table "rowkey" {:all-versions true})]
+      (put connection table-name "rowkey" {:hf {:a {123 "v1"}}})
+      (put connection table-name "rowkey" {:hf {:a {456 "v2"}}})
+      (put connection table-name "rowkey" {:hf {:a {888 "v3"}}})
+      (let [result (get connection table-name "rowkey" {:all-versions true})]
         (is (not-empty result))
         (is (= 3 (count result)))
         (is (= #{"v1" "v2" "v3"} (set (map #(-> % :value to-clojure) result)))))))
@@ -117,28 +119,28 @@
   (deftest get-test-with-specific-families
     (testing "get specific families"
       (put connection multi-family-table-name "rowkey" {:f1 {:a {123 "v1"}}})
-        (put connection multi-family-table-name "rowkey" {:f2 {:a {456 "v2"}}})
-        (let [result (get connection multi-family-table-name "rowkey" {:families [:f2]})]
-          (is (= 1 (count result)))
-          (is (= "f2" (-> result first :family to-clojure)))
-          (is (= "v2" (-> result first :value to-clojure))))))
+      (put connection multi-family-table-name "rowkey" {:f2 {:a {456 "v2"}}})
+      (let [result (get connection multi-family-table-name "rowkey" {:families [:f2]})]
+        (is (= 1 (count result)))
+        (is (= "f2" (-> result first :family to-clojure)))
+        (is (= "v2" (-> result first :value to-clojure))))))
 
   (deftest get-test-with-specific-families-and-columns
     (testing "get specific families and columns"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:a {123 "v1"}
-                                                              :b {444 "v2"}}})
-      (let [result (get connection :_hornet-table "rowkey" {:columns {:hornet-family [:b]}})]
+      (put connection table-name "rowkey" {:hf {:a {123 "v1"}
+                                                :b {444 "v2"}}})
+      (let [result (get connection table-name "rowkey" {:columns {:hf [:b]}})]
         (is (= 1 (count result)))
-        (is (= "hornet-family" (-> result first :family to-clojure)))
+        (is (= "hf" (-> result first :family to-clojure)))
         (is (= "b" (-> result first :qualifier to-clojure)))
         (is (= "v2" (-> result first :value to-clojure))))))
 
   (deftest delete-test-rowkey-keyword
     (testing "simple delete with rowkey as keyword"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:b "b"}})
-      (is (not-empty (get connection :_hornet-table "rowkey")))
-      (delete connection :_hornet-table "rowkey")
-      (is (empty (get connection :_hornet-table "rowkey")))))
+      (put connection table-name "rowkey" {:hf {:b "b"}})
+      (is (not-empty (get connection table-name "rowkey")))
+      (delete connection table-name "rowkey")
+      (is (empty (get connection table-name "rowkey")))))
 
   (deftest delete-test-by-family
     (testing "delete specific family only"
@@ -167,7 +169,7 @@
       (is (empty (get connection multi-family-table-name "rowkey" {:families [:f3]})))))
 
   (deftest delete-test-by-columns
-    (testing "delete specific column sonly"
+    (testing "delete specific columns only"
       (put connection multi-family-table-name "rowkey" {:f1  {:a "a"
                                                               :b "b"
                                                               :c "c"}})
@@ -180,35 +182,35 @@
 
   (deftest increment-test-single-column
     (testing "increments single column"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:f 10}})
-      (increment connection :_hornet-table "rowkey" {:hornet-family {:f 1}})
-      (let [result (get connection :_hornet-table "rowkey")
+      (put connection table-name "rowkey" {:hf {:f 10}})
+      (increment connection table-name "rowkey" {:hf {:f 1}})
+      (let [result (get connection table-name "rowkey")
             res (first result)]
         (is (= 11 (Bytes/toLong (:value res)))))))
 
   (deftest increment-test-increment-by-not-one
     (testing "increments single column by value other than 1"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:f 10}})
-      (increment connection :_hornet-table "rowkey" {:hornet-family {:f 5}})
-      (let [result (get connection :_hornet-table "rowkey")
+      (put connection table-name "rowkey" {:hf {:f 10}})
+      (increment connection table-name "rowkey" {:hf {:f 5}})
+      (let [result (get connection table-name "rowkey")
             res (first result)]
         (is (= 15 (Bytes/toLong (:value res)))))))
 
   (deftest increment-test-increment-by-negative-num
     (testing "increments single column by a negative value (subtracts)"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:f 10}})
-      (increment connection :_hornet-table "rowkey" {:hornet-family {:f -5}})
-      (let [result (get connection :_hornet-table "rowkey")
+      (put connection table-name "rowkey" {:hf {:f 10}})
+      (increment connection table-name "rowkey" {:hf {:f -5}})
+      (let [result (get connection table-name "rowkey")
             res (first result)]
         (is (= 5 (Bytes/toLong (:value res)))))))
 
   (deftest increment-test-multiple-columns
     (testing "increments single column by a negative value (subtracts)"
-      (put connection :_hornet-table "rowkey" {:hornet-family {:f1 10
-                                                              :f2 15}})
-      (increment connection :_hornet-table "rowkey" {:hornet-family {:f1 5
-                                                                    :f2 -5}})
-      (let [result (get connection :_hornet-table "rowkey")
+      (put connection table-name "rowkey" {:hf {:f1 10
+                                                :f2 15}})
+      (increment connection table-name "rowkey" {:hf {:f1 5
+                                                      :f2 -5}})
+      (let [result (get connection table-name "rowkey")
             [res-f1 res-f2] result]
         (is (= "f1" (to-clojure (:qualifier res-f1))))
         ;; TODO need schemas Bytes/toLong is a bad idea
