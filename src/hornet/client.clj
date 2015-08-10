@@ -3,6 +3,7 @@
   (:require [taoensso.encore :as encore]
             [hornet.requests :as req]
             [hornet.conversions :as conv]
+            [hornet.table :as ht]
             [hornet.admin :as admin])
   (:import [org.apache.hadoop.conf Configuration]
            [org.apache.hadoop.hbase HBaseConfiguration
@@ -43,11 +44,6 @@
   [^Configuration config]
   (HConnectionManager/createConnection config))
 
-(defn open-table
-  [^HConnection connection table-name]
-  ;; todo use make-table-name from admin NS, avoid circular ref
-  (.getTable connection (TableName/valueOf (conv/to-bytes table-name))))
-
 (defprotocol IHBaseRequest
   (execute [^Operation request ^HTableInterface table]))
 
@@ -80,7 +76,7 @@
   ([^HConnection conn table-name rowkey]
    (get conn table-name rowkey {}))
   ([^HConnection conn table-name rowkey args]
-   (with-open [^HTableInterface table (open-table conn table-name)]
+   (with-open [^HTableInterface table (ht/table conn table-name)]
      (let [request (req/get rowkey args)]
        (execute request table)))))
 
@@ -88,7 +84,7 @@
   ([^HConnection conn table-name rowkey columns]
    (put conn table-name rowkey columns {}))
   ([^HConnection conn table-name rowkey columns args]
-   (with-open [^HTableInterface table (open-table conn table-name)]
+   (with-open [^HTableInterface table (ht/table conn table-name)]
      (let [request (req/put rowkey columns args)]
        (execute request table)))))
 
@@ -96,7 +92,7 @@
   ([^HConnection conn table-name rowkey]
    (delete conn table-name rowkey {}))
   ([^HConnection conn table-name rowkey args]
-   (with-open [^HTableInterface table (open-table conn table-name)]
+   (with-open [^HTableInterface table (ht/table conn table-name)]
      (let [request (req/delete rowkey args)]
        (execute request table)))))
 
@@ -104,7 +100,7 @@
   ([^HConnection conn table-name rowkey columns]
    (increment conn table-name rowkey columns {}))
   ([^HConnection conn table-name rowkey columns args]
-   (with-open [^HTableInterface table (open-table conn table-name)]
+   (with-open [^HTableInterface table (ht/table conn table-name)]
      (let [request (req/increment rowkey columns args)]
        (execute request table)))))
 
@@ -112,6 +108,6 @@
   ([^HConnection connection table-name]
    (scan connection table-name {}))
   ([^HConnection connection table-name query]
-   (with-open [^HTableInterface table (open-table connection table-name)]
+   (with-open [^HTableInterface table (ht/table connection table-name)]
      (let [request (req/scan query)]
        (execute request table)))))

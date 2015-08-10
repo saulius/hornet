@@ -1,20 +1,17 @@
 (ns hornet.admin
   (:require [taoensso.encore :as encore]
             [hornet.constants :as hc]
+            [hornet.table :as ht]
             [hornet.conversions :refer [to-bytes to-clojure]])
   (:import [org.apache.hadoop.hbase TableName]
            [org.apache.hadoop.hbase.client Admin HBaseAdmin HConnection]
            [org.apache.hadoop.hbase HColumnDescriptor HTableDescriptor]
            [org.apache.hadoop.hbase.util Bytes]))
 
-(defn make-table-name
-  [name]
-  (TableName/valueOf ^bytes (to-bytes name)))
-
 (defn table-available?
   [^HConnection connection table-name]
   (.isTableAvailable ^Admin (HBaseAdmin. connection)
-                     ^TableName (make-table-name table-name)))
+                     ^TableName (ht/table-name table-name)))
 
 (defn list-table-names
   [^HConnection connection]
@@ -23,12 +20,12 @@
 (defn table-exists?
   [^HConnection connection table-name]
   (.tableExists ^Admin (HBaseAdmin. connection)
-                ^TableName (make-table-name table-name)))
+                ^TableName (ht/table-name table-name)))
 
 (defn table-enabled?
   [^HConnection connection table-name]
   (.isTableEnabled ^Admin (HBaseAdmin. connection)
-                   ^TableName (make-table-name table-name)))
+                   ^TableName (ht/table-name table-name)))
 
 (defn table-disabled?
   [^HConnection connection table-name]
@@ -82,7 +79,7 @@
 
 (defn create-table
   [^HConnection connection table-name column-families]
-  (let [table (HTableDescriptor. ^TableName (make-table-name table-name))]
+  (let [table (HTableDescriptor. ^TableName (ht/table-name table-name))]
     (doseq [cdescriptor (map to-column-descriptor column-families)]
       (.addFamily table cdescriptor))
     (.createTable (HBaseAdmin. connection) table)))
@@ -90,17 +87,17 @@
 (defn disable-table
   [^HConnection connection table-name]
   (.disableTable ^Admin (HBaseAdmin. connection)
-                 ^TableName (make-table-name table-name)))
+                 ^TableName (ht/table-name table-name)))
 
 (defn enable-table
   [^HConnection connection table-name]
   (.enableTable ^Admin (HBaseAdmin. connection)
-                ^TableName (make-table-name table-name)))
+                ^TableName (ht/table-name table-name)))
 
 (defn delete-table
   [^HConnection connection table-name]
   (.deleteTable ^Admin (HBaseAdmin. connection)
-                ^TableName (make-table-name table-name)))
+                ^TableName (ht/table-name table-name)))
 
 (defn remove-table
   [^HConnection connection table-name]
@@ -114,5 +111,5 @@
    (truncate-table connection table-name true))
   ([^HConnection connection table-name preserve-splits]
    (.truncateTable ^Admin (HBaseAdmin. connection)
-                   ^TableName (make-table-name table-name)
+                   ^TableName (ht/table-name table-name)
                    preserve-splits)))
