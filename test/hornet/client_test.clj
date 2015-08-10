@@ -275,4 +275,33 @@
       (put connection table-name "rowkey3" {:hf {:col3 {5 "val3"}}})
       (let [result (flatten (scan connection table-name {:reversed true}))]
         (is (= ["col3" "col2" "col1"] (map #(-> % :qualifier to-clojure) result)))
-        (is (= ["val3" "val2" "val1"] (map #(-> % :value to-clojure) result)))))))
+        (is (= ["val3" "val2" "val1"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-max-versions
+    (testing "scanning with max versions set"
+      (put connection table-name "rowkey1" {:hf {:col1 {1 "val1"}}})
+      (put connection table-name "rowkey1" {:hf {:col1 {2 "val2"}}})
+      (put connection table-name "rowkey1" {:hf {:col1 {5 "val3"}}})
+      (let [result (flatten (scan connection table-name {:max-versions 2}))]
+        (is (= [5 2] (map #(-> % :timestamp to-clojure) result)))
+        (is (= ["val3" "val2"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-families
+    (testing "scanning with families set"
+      (put connection multi-family-table-name "rowkey1" {:f1 {:col1 {1 "val1"}}})
+      (put connection multi-family-table-name "rowkey1" {:f2 {:col1 {2 "val2"}}})
+      (put connection multi-family-table-name "rowkey1" {:f3 {:col1 {5 "val3"}}})
+      (let [result (flatten (scan connection multi-family-table-name {:families [:f2 :f3]}))]
+        (is (= ["f2" "f3"] (map #(-> % :family to-clojure) result)))
+        (is (= ["val2" "val3"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-columns
+    (testing "scanning with columns set"
+      (put connection multi-family-table-name "rowkey1" {:f1 {:col1 {1 "val1"}}})
+      (put connection multi-family-table-name "rowkey1" {:f2 {:col2 {2 "val2"}}})
+      (put connection multi-family-table-name "rowkey1" {:f3 {:col3 {5 "val3"}}})
+      (let [result (flatten (scan connection multi-family-table-name {:columns {:f1 [:col1]
+                                                                                :f3 [:col3]}}))]
+        (is (= ["f1" "f3"] (map #(-> % :family to-clojure) result)))
+        (is (= ["col1" "col3"] (map #(-> % :qualifier to-clojure) result)))
+        (is (= ["val1" "val3"] (map #(-> % :value to-clojure) result)))))))

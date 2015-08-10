@@ -205,6 +205,17 @@
                      id         (.setId id)
                      ttl        (.setTTL ttl))))
 
+(defn scan-families
+  [^Scan request families]
+  (doseq [family families]
+    (.addFamily request (to-bytes family))))
+
+(defn scan-columns
+  [^Scan request cols]
+  (doseq [[family columns] cols
+          column columns]
+    (.addColumn request (to-bytes family) (to-bytes column))))
+
 (defn ^Scan scan
   [{:keys [filter
            start-row
@@ -238,6 +249,8 @@
                                                     load-column-families-on-demand)
                     reversed (.setReversed reversed)
                     small (.setSmall small)
+                    families (scan-families families)
+                    columns (scan-columns columns)
                     (and min-timestamp
                          max-timestamp) (.setTimeRange min-timestamp max-timestamp)))
 
