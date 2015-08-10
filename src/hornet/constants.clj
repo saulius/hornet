@@ -1,5 +1,8 @@
 (ns hornet.constants
-  (:import [org.apache.hadoop.hbase HConstants KeepDeletedCells]
+  (:import [org.apache.hadoop.hbase.filter
+            CompareFilter$CompareOp
+            BitComparator$BitwiseOp]
+           [org.apache.hadoop.hbase HConstants KeepDeletedCells]
            [org.apache.hadoop.hbase.io.compress Compression$Algorithm]
            [org.apache.hadoop.hbase.io.encoding DataBlockEncoding]
            [org.apache.hadoop.hbase.regionserver BloomType]
@@ -39,3 +42,17 @@
   {:false KeepDeletedCells/FALSE
    :true  KeepDeletedCells/TRUE
    :ttl   KeepDeletedCells/TTL})
+
+(def operator
+  {:=    CompareFilter$CompareOp/EQUAL
+   :>    CompareFilter$CompareOp/GREATER
+   :>=   CompareFilter$CompareOp/GREATER_OR_EQUAL
+   :<=   CompareFilter$CompareOp/LESS_OR_EQUAL
+   :<    CompareFilter$CompareOp/LESS
+   :not= CompareFilter$CompareOp/NOT_EQUAL
+   :noop CompareFilter$CompareOp/NO_OP})
+
+(def bit-operator
+  {:and BitComparator$BitwiseOp/AND
+   :or  BitComparator$BitwiseOp/OR
+   :xor BitComparator$BitwiseOp/XOR})
