@@ -50,6 +50,10 @@
   (to-clojure [this]
     this)
 
+  clojure.lang.Keyword
+  (to-clojure [this]
+    (to-clojure (str this)))
+
   java.lang.String
   (to-clojure [this]
     this)

@@ -238,4 +238,41 @@
 
         (is (= "f3" (to-clojure (:family res-f3))))
         (is (= "c" (to-clojure (:qualifier res-f3))))
-        (is (= 25 (Bytes/toLong (:value res-f3))))))))
+        (is (= 25 (Bytes/toLong (:value res-f3)))))))
+
+  (deftest scan-test-basic
+    (testing "basic scanning returns results"
+      (put connection table-name "rowkey1" {:hf {:col1 "val1"}})
+      (put connection table-name "rowkey2" {:hf {:col2 "val2"}})
+      (let [result (flatten (scan connection table-name))]
+        (is (= ["col1" "col2"] (map #(-> % :qualifier to-clojure) result)))
+        (is (= ["val1" "val2"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-start-stop-keys
+    (testing "scanning with start and stop keys set"
+      (put connection table-name "rowkey1" {:hf {:col1 "val1"}})
+      (put connection table-name "rowkey2" {:hf {:col2 "val2"}})
+      (put connection table-name "rowkey3" {:hf {:col3 "val3"}})
+      (let [result (flatten (scan connection table-name {:start-row "rowkey2"
+                                                         :stop-row  "rowkey4"}))]
+        (is (= ["col2" "col3"] (map #(-> % :qualifier to-clojure) result)))
+        (is (= ["val2" "val3"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-min-max-timestamp
+    (testing "scanning with min+max timestamps"
+      (put connection table-name "rowkey1" {:hf {:col1 {1 "val1"}}})
+      (put connection table-name "rowkey2" {:hf {:col2 {2 "val2"}}})
+      (put connection table-name "rowkey3" {:hf {:col3 {5 "val3"}}})
+      (let [result (flatten (scan connection table-name {:min-timestamp 5
+                                                         :max-timestamp 8}))]
+        (is (= ["col3"] (map #(-> % :qualifier to-clojure) result)))
+        (is (= ["val3"] (map #(-> % :value to-clojure) result))))))
+
+  (deftest scan-test-reversed
+    (testing "scanning in reverse order"
+      (put connection table-name "rowkey1" {:hf {:col1 {1 "val1"}}})
+      (put connection table-name "rowkey2" {:hf {:col2 {2 "val2"}}})
+      (put connection table-name "rowkey3" {:hf {:col3 {5 "val3"}}})
+      (let [result (flatten (scan connection table-name {:reversed true}))]
+        (is (= ["col3" "col2" "col1"] (map #(-> % :qualifier to-clojure) result)))
+        (is (= ["val3" "val2" "val1"] (map #(-> % :value to-clojure) result)))))))

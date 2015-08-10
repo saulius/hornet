@@ -109,7 +109,9 @@
        (execute request table)))))
 
 (defn scan
-  [^HConnection connection table-name & query]
-  (with-open [^HTableInterface table (open-table connection table-name)]
-    (let [request (apply req/scan query)]
-      (execute request table))))
+  ([^HConnection connection table-name]
+   (scan connection table-name {}))
+  ([^HConnection connection table-name query]
+   (with-open [^HTableInterface table (open-table connection table-name)]
+     (let [request (req/scan query)]
+       (execute request table)))))
