@@ -72,7 +72,7 @@
                               :in-memory true
                               :block-cache-enabled true
                               :ttl 23423
-                              :compression-type :gz
+                              :compression-algorithm :gz
                               :data-block-encoding :fast-diff
                               :bloom-filter-type :row
                               :blocksize 4096

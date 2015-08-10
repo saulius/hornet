@@ -1,8 +1,6 @@
 (ns hornet.admin
-  (:refer-clojure :rename {get map-get
-                           flush clj-flush})
   (:require [taoensso.encore :as encore]
-            [hornet.base :as hb]
+            [hornet.constants :as hc]
             [hornet.conversions :refer [to-bytes to-clojure]])
   (:import [org.apache.hadoop.hbase TableName]
            [org.apache.hadoop.hbase.client Admin HBaseAdmin HConnection]
@@ -45,7 +43,7 @@
                     in-memory
                     block-cache-enabled
                     ttl
-                    compression-type
+                    compression-algorithm
                     data-block-encoding
                     bloom-filter-type
                     blocksize
@@ -53,17 +51,17 @@
    (encore/doto-cond [_ (HColumnDescriptor. (to-bytes family))]
                      max-versions (.setMaxVersions max-versions)
                      min-versions (.setMinVersions min-versions)
-                     keep-deleted-cells (.setKeepDeletedCells (hb/keep-deleted-cells-map keep-deleted-cells))
+                     keep-deleted-cells (.setKeepDeletedCells (hc/keep-deleted-cells keep-deleted-cells))
                      in-memory (.setInMemory in-memory)
                      block-cache-enabled (.setBlockCacheEnabled block-cache-enabled)
                      ttl (.setTimeToLive ttl)
                      data-block-encoding (.setDataBlockEncoding
-                                          (hb/data-block-encoding-map data-block-encoding))
-                     compression-type (.setCompressionType
-                                       (hb/compression-map compression-type))
+                                          (hc/data-block-encoding data-block-encoding))
+                     compression-algorithm (.setCompressionType
+                                            (hc/compression-algorithm compression-algorithm))
                      bloom-filter-type (.setBloomFilterType
-                                        (hb/bloom-filter-type-map bloom-filter-type))
-                     replication-scope (.setScope (hb/replication-scope-map replication-scope))
+                                        (hc/bloom-filter-type bloom-filter-type))
+                     replication-scope (.setScope (hc/replication-scope replication-scope))
                      blocksize (.setBlocksize blocksize))))
 
 (defprotocol ColumnDescriptor

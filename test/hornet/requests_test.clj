@@ -1,5 +1,4 @@
 (ns hornet.requests-test
-  (:refer-clojure :rename {get map-get})
   (:require [clojure.test :refer :all]
             [hornet.conversions :refer [to-bytes]]
             [hornet.requests :refer :all]))

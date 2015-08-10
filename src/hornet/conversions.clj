@@ -1,7 +1,5 @@
 (ns hornet.conversions
-  (:refer-clojure :rename {get map-get
-                           flush clj-flush})
-  (:require [hornet.base :as base])
+  (:require [hornet.constants :as hc])
   (:import [org.apache.hadoop.hbase.util Bytes]
            [org.apache.hadoop.hbase Cell KeyValue TableName]
            [org.apache.hadoop.hbase.client Durability Result]))
@@ -32,7 +30,7 @@
 
   Durability
   (to-clojure [this]
-    ((clojure.set/map-invert base/durability-map) this))
+    ((clojure.set/map-invert hc/durability) this))
 
   KeyValue
   (to-clojure [this]

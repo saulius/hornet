@@ -1,7 +1,7 @@
 (ns hornet.requests
   (:refer-clojure :rename {get map-get})
   (:require [taoensso.encore :as encore]
-            [hornet.base :as hb]
+            [hornet.constants :as hc]
             [hornet.utils :as hu]
             [hornet.conversions :refer [to-bytes to-clojure]])
   (:import [org.apache.hadoop.hbase.client Durability HTablePool Get Put Row Delete Scan
@@ -201,7 +201,7 @@
   ([rowkey cells {:keys [durability id ttl]}]
    (encore/doto-cond [_ (Put. (to-bytes rowkey))]
                      :always    (put-columns cells)
-                     durability (.setDurability (hb/encode-durability durability))
+                     durability (.setDurability (hc/durability durability))
                      id         (.setId id)
                      ttl        (.setTTL ttl))))
 
@@ -268,7 +268,7 @@
                      timestamp  (.setTimestamp timestamp)
                      columns    (delete-columns columns)
                      id         (.setId id)
-                     durability (.setDurability (hb/encode-durability durability))
+                     durability (.setDurability (hc/durability durability))
                      ttl        (.setTTL ttl))))
 
 (defn increment-columns
